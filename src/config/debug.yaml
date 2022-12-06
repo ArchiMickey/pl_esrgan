@@ -1,0 +1,63 @@
+batch_size: 4
+num_workers: 12
+seed: 42
+lr: 2e-4
+name: null
+project: esrgan
+ckpt_path: null
+
+hr_height: 192
+hr_width: 192
+
+model:
+  batch_size: ${batch_size}
+  num_workers: ${num_workers}
+  lr: ${lr}
+  min_lr: 1e-6
+  lr_check_interval: 6
+  lr_decay_factor: 0.25
+  lr_decay_patience: 6
+  channels: 3
+  filters: 64
+  upscale_factor: 4
+  hr_height: ${hr_height}
+  hr_width: ${hr_width}
+  num_res_blocks: 16
+  lam_adv: 5e-3
+  lam_pixel: 1e-2
+  loss_g_scale: 1
+  loss_d_scale: 1
+
+datamodule:
+  batch_size: ${batch_size}
+  num_workers: ${num_workers}
+  hr_height: ${hr_height}
+  hr_width: ${hr_width}
+  pathlist_dict:
+    train:
+      - datasets/DIV2K/DIV2K_train_HR
+    val:
+      - datasets/DIV2K/DIV2K_valid_HR
+
+logger:
+  _target_: pytorch_lightning.loggers.WandbLogger
+  name: ${name}
+  project: ${project}
+  offline: true
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  accelerator: gpu
+  devices: 1
+  log_every_n_steps: 200
+  max_epochs: 500
+  val_check_interval: null
+  check_val_every_n_epoch: 2
+  gradient_clip_val: 1.0
+  fast_dev_run: true
+  logger: ${logger}
+  callbacks:
+    - _target_: pytorch_lightning.callbacks.ModelSummary
+      max_depth: 5
+    - _target_: pytorch_lightning.callbacks.LearningRateMonitor
+      logging_interval: step
