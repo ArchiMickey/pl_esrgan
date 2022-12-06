@@ -75,34 +75,34 @@ class LightningESRGAN(pl.LightningModule):
         optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=self.lr, betas=(0.9, 0.999))
         optimzier_G = torch.optim.Adam(self.generator.parameters(), lr=self.lr, betas=(0.9, 0.999))
         
-        scheduler_D = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer_D,
-            factor=0.25,
-            patience=6,
-            threshold=1e-6,
-            min_lr=1e-6,
-            verbose=True,
-        )
-        scheduler_G = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimzier_G,
-            factor=0.25,
-            patience=6,
-            threshold=1e-6,
-            min_lr=1e-6,
-            verbose=True,
-        )
+        # scheduler_D = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #     optimizer_D,
+        #     factor=self.lr_decay_factor,
+        #     patience=self.lr_decay_patience,
+        #     threshold=1e-6,
+        #     min_lr=self.min_lr,
+        #     verbose=True,
+        # )
+        # scheduler_G = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #     optimzier_G,
+        #     factor=self.lr_decay_factor,
+        #     patience=self.lr_decay_patience,
+        #     threshold=1e-6,
+        #     min_lr=self.min_lr,
+        #     verbose=True,
+        # )
+        scheduler_D = torch.optim.lr_scheduler.StepLR(optimizer_D, step_size=2e5, gamma=0.5, verbose=True)
+        scheduler_G = torch.optim.lr_scheduler.StepLR(optimzier_G, step_size=2e5, gamma=0.5, verbose=True)
         
         lr_dict_D = {
             "scheduler": scheduler_D,
-            "interval": "epoch",
-            "monitor": "val_loss",
+            "interval": "step",
             "name": "lr_D",
             "frequency": self.lr_check_interval,
         }
         lr_dict_G = {
             "scheduler": scheduler_G,
-            "interval": "epoch",
-            "monitor": "val_loss",
+            "interval": "step",
             "name": "lr_G",
             "frequency": self.lr_check_interval,
         }

@@ -14,8 +14,8 @@ model:
   num_workers: ${num_workers}
   lr: ${lr}
   min_lr: 1e-6
-  lr_check_interval: 6
-  lr_decay_factor: 0.25
+  lr_check_interval: 2e5
+  lr_decay_factor: 0.5
   lr_decay_patience: 6
   channels: 3
   filters: 64
@@ -54,7 +54,7 @@ trainer:
   val_check_interval: null
   check_val_every_n_epoch: 2
   gradient_clip_val: 1.0
-  fast_dev_run: true
+  fast_dev_run: 8
   logger: ${logger}
   callbacks:
     - _target_: pytorch_lightning.callbacks.ModelSummary
