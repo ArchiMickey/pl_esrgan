@@ -14,18 +14,18 @@ model:
   num_workers: ${num_workers}
   lr: ${lr}
   min_lr: 1e-6
-  lr_check_interval: ${trainer.check_val_every_n_epoch}
-  lr_decay_factor: 0.25
+  lr_check_interval: 2e5
+  lr_decay_factor: 0.5
   lr_decay_patience: 3
-  warmup_steps: 1e6
+  warmup_steps: 2e6
   channels: 3
   filters: 64
   upscale_factor: 4
   hr_height: ${hr_height}
   hr_width: ${hr_width}
   num_residual_blocks: 23
-  lam_adv: 5e-3
-  lam_pixel: 1e-2
+  lam_adv: 0
+  lam_pixel: 1
   loss_g_scale: 1
   loss_d_scale: 200
 
@@ -59,7 +59,8 @@ trainer:
   accelerator: gpu
   devices: 1
   log_every_n_steps: 200
-  max_epochs: 100000
+  # max_epochs: 100000
+  max_steps: 2e6
   val_check_interval: null
   check_val_every_n_epoch: 2
   gradient_clip_val: 10.0
@@ -70,9 +71,9 @@ trainer:
     - _target_: pytorch_lightning.callbacks.LearningRateMonitor
       logging_interval: step
     - _target_: pytorch_lightning.callbacks.ModelCheckpoint
-      dirpath: checkpoints
-      filename: '{epoch:02d}-{val_loss:.5f}'
-      monitor: val_loss
+      dirpath: checkpoints/stage_1
+      filename: '{epoch:02d}-{val_loss_pixel:.5f}'
+      monitor: val_loss_pixel
       save_top_k: 3
       mode: min
       save_last: True

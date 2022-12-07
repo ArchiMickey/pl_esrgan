@@ -22,7 +22,7 @@ model:
   upscale_factor: 4
   hr_height: ${hr_height}
   hr_width: ${hr_width}
-  num_res_blocks: 16
+  num_residual_blocks: 16
   lam_adv: 5e-3
   lam_pixel: 1e-2
   loss_g_scale: 1
@@ -35,7 +35,7 @@ datamodule:
   hr_width: ${hr_width}
   pathlist_dict:
     train:
-      - datasets/DIV2K/DIV2K_train_HR
+      - datasets/DIV2K/DIV2K_valid_HR
     val:
       - datasets/DIV2K/DIV2K_valid_HR
 
@@ -54,7 +54,7 @@ trainer:
   val_check_interval: null
   check_val_every_n_epoch: 2
   gradient_clip_val: 1.0
-  fast_dev_run: 8
+  fast_dev_run: true
   logger: ${logger}
   callbacks:
     - _target_: pytorch_lightning.callbacks.ModelSummary
