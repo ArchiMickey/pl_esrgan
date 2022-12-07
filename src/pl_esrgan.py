@@ -10,7 +10,6 @@ from src.ssim import ssim
 from src.datamodule import denormalize
 
 from icecream import ic
-import matplotlib.pyplot as plt
 
 
 class LightningESRGAN(pl.LightningModule):
@@ -78,6 +77,7 @@ class LightningESRGAN(pl.LightningModule):
             "scheduler": scheduler_D,
             "interval": "step",
             "name": "lr_D",
+            "frequency": self.lr_check_interval,
         }
         lr_dict_G = {
             "scheduler": scheduler_G,
