@@ -70,19 +70,36 @@ class LightningESRGAN(pl.LightningModule):
         optimizer_D = torch.optim.Adam(self.discriminator.parameters(), lr=self.lr, betas=(0.9, 0.999))
         optimzier_G = torch.optim.Adam(self.generator.parameters(), lr=self.lr, betas=(0.9, 0.999))
         
-        scheduler_D = torch.optim.lr_scheduler.StepLR(optimizer_D, step_size=self.lr_check_interval, gamma=self.lr_decay_factor)
-        scheduler_G = torch.optim.lr_scheduler.StepLR(optimzier_G, step_size=self.lr_check_interval, gamma=self.lr_decay_factor)
+        # scheduler_D = torch.optim.lr_scheduler.StepLR(optimizer_D, step_size=self.lr_check_interval, gamma=self.lr_decay_factor)
+        # scheduler_G = torch.optim.lr_scheduler.StepLR(optimzier_G, step_size=self.lr_check_interval, gamma=self.lr_decay_factor)
+        scheduler_D = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer_D,
+            factor=self.lr_decay_factor,
+            patience=self.lr_decay_patience,
+            threshold=1e-6,
+            min_lr=self.min_lr,
+            verbose=True,
+        )
+        scheduler_G = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimzier_G,
+            factor=self.lr_decay_factor,
+            patience=self.lr_decay_patience,
+            threshold=1e-6,
+            min_lr=self.min_lr,
+            verbose=True,
+        )
         
         lr_dict_D = {
             "scheduler": scheduler_D,
-            "interval": "step",
             "name": "lr_D",
+            "monitor": "val_loss",
             "frequency": self.lr_check_interval,
         }
         lr_dict_G = {
             "scheduler": scheduler_G,
-            "interval": "step",
             "name": "lr_G",
+            "monitor": "val_loss",
+            "frequency": self.lr_check_interval,
         }
         
         return [
@@ -179,12 +196,19 @@ class LightningESRGAN(pl.LightningModule):
             log_img = torch.stack(log_img)
             wandb.log({'img/val_img': wandb.Image(log_img)}, step=self.global_step)
             
-        
+        loss_GAN = 0
+        loss_content = 0
         loss_pixel = self.criterion_pixel(img_sr, img_hr)
-        gen_features = self.feature_extractor(img_sr)
-        real_features = self.feature_extractor(img_hr).detach()
-        loss_content = self.criterion_content(gen_features, real_features)
-        loss = self.lam_pixel * loss_pixel + loss_content
+        if self.global_step > self.warmup_steps:
+            pred_real = self.discriminator(img_hr).detach()
+            pred_fake = self.discriminator(img_sr)
+            
+            loss_GAN = self.criterion_GAN(pred_fake - pred_real.mean(0, keepdim=True), torch.ones_like(pred_fake))
+            
+            gen_features = self.feature_extractor(img_sr)
+            real_features = self.feature_extractor(img_hr).detach()
+            loss_content = self.criterion_content(gen_features, real_features)
+        loss = self.lam_pixel * loss_pixel + self.lam_adv * loss_GAN + loss_content
         
         mse_loss = ((img_sr - img_hr) ** 2).data.mean()
         ssim_ = ssim(img_sr, img_hr).item()
@@ -193,6 +217,7 @@ class LightningESRGAN(pl.LightningModule):
         self.log_dict({
             "val/loss_pixel": loss_pixel,
             "val/loss_content": loss_content,
+            "val/loss_GAN": loss_GAN,
             "val/loss": loss,
             "val/ssim": ssim_,
             "val/psnr": psnr,
@@ -200,7 +225,7 @@ class LightningESRGAN(pl.LightningModule):
         self.log_dict({
             "val_loss": loss,
             "val_loss_pixel": loss_pixel,
-        })
+        }, logger=False)
         return loss
     
     def configure_gradient_clipping(
