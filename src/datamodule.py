@@ -59,12 +59,13 @@ class SRDataset(Dataset):
         return len(self.files)
     
     def __getitem__(self, index):
-        img = cv2.imread(self.files[index])
+        path = self.files[index]
+        img = cv2.imread(path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_hr = self.hr_transform(image=img)['image']
         img_lr = self.lr_transform(image=img_hr)['image']
         img_hr, img_lr = self.final_transform(image=img_hr)['image'], self.final_transform(image=img_lr)['image']
-        return {"lr": img_lr, "hr": img_hr}
+        return {"filename": path, "lr": img_lr, "hr": img_hr}
     
 class SRDataModule(pl.LightningDataModule):
     def __init__(self, batch_size, num_workers, pathlist_dict, hr_height, hr_width) -> None:
@@ -83,4 +84,4 @@ class SRDataModule(pl.LightningDataModule):
         return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True)
     
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(self.val_ds, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)

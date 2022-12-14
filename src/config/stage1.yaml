@@ -27,7 +27,7 @@ model:
   lam_adv: 0
   lam_pixel: 1
   loss_g_scale: 1
-  loss_d_scale: 200
+  train_discriminator: False
 
 datamodule:
   batch_size: ${batch_size}
